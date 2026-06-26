@@ -15,10 +15,11 @@ export const variableTypeLabels: Record<VariableType, string> = {
   text: 'Текст',
   textarea: 'Многострочный текст',
   number: 'Число',
-  money: 'Сумма',
+  currency: 'Сумма',
   date: 'Дата',
   select: 'Выбор из списка',
   boolean: 'Логический признак',
+  table: 'Повторяющийся блок / таблица',
 };
 
 export function formatDate(value: string): string {

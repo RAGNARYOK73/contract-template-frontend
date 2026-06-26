@@ -5,10 +5,18 @@ export type VariableType =
   | 'text'
   | 'textarea'
   | 'number'
-  | 'money'
+  | 'currency'
   | 'date'
   | 'select'
-  | 'boolean';
+  | 'boolean'
+  | 'table';
+
+export type TableRowValue = Record<string, string>;
+export type DocumentFieldValue = string | boolean | TableRowValue[];
+
+export interface TableOptions {
+  columns: string[];
+}
 
 export interface Template {
   id: string;
@@ -31,7 +39,7 @@ export interface TemplateVariable {
   required: boolean;
   defaultValue: string;
   hint: string;
-  options?: string[];
+  options?: string[] | TableOptions;
 }
 
 export interface GeneratedDocument {
@@ -42,7 +50,7 @@ export interface GeneratedDocument {
   createdAt: string;
   format: TemplateFormat | 'pdf';
   fileName: string;
-  values: Record<string, string | boolean>;
+  values: Record<string, DocumentFieldValue>;
 }
 
 export interface UploadTemplateInput {

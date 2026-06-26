@@ -7,7 +7,14 @@ import {
   saveTemplateVariables,
   uploadTemplate,
 } from './api/mockApi';
-import { GeneratedDocument, Template, TemplateStatus, TemplateVariable, VariableType } from './types';
+import {
+  DocumentFieldValue,
+  GeneratedDocument,
+  TableRowValue,
+  Template,
+  TemplateVariable,
+  VariableType,
+} from './types';
 import { formatDate, formatDateTime, formatLabels, parseTags, statusLabels, variableTypeLabels } from './utils';
 
 type Page = 'templates' | 'upload' | 'variables' | 'create' | 'history';
@@ -376,7 +383,7 @@ function VariablesPage({ template, onSaved }: { template: Template; onSaved: () 
 
 function CreateDocumentPage({ template, onGenerated }: { template: Template; onGenerated: () => void }) {
   const [variables, setVariables] = useState<TemplateVariable[]>([]);
-  const [values, setValues] = useState<Record<string, string | boolean>>({});
+  const [values, setValues] = useState<Record<string, DocumentFieldValue>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [format, setFormat] = useState<'docx' | 'pdf'>(template.format);
   const [preview, setPreview] = useState(false);
@@ -387,7 +394,7 @@ function CreateDocumentPage({ template, onGenerated }: { template: Template; onG
       setVariables(items);
       setValues(
         Object.fromEntries(
-          items.map((item) => [item.name, item.type === 'boolean' ? item.defaultValue === 'true' : item.defaultValue]),
+          items.map((item) => [item.name, getInitialFieldValue(item)]),
         ),
       );
       setErrors({});
@@ -400,10 +407,16 @@ function CreateDocumentPage({ template, onGenerated }: { template: Template; onG
     const nextErrors: Record<string, string> = {};
     variables.forEach((variable) => {
       const value = values[variable.name];
-      if (variable.required && (value === '' || value === false || value === undefined)) {
+      if (
+        variable.required
+        && (value === ''
+          || value === false
+          || value === undefined
+          || (Array.isArray(value) && value.length === 0))
+      ) {
         nextErrors[variable.name] = 'Заполните обязательное поле';
       }
-      if ((variable.type === 'number' || variable.type === 'money') && value && Number.isNaN(Number(value))) {
+      if ((variable.type === 'number' || variable.type === 'currency') && value && Number.isNaN(Number(value))) {
         nextErrors[variable.name] = 'Введите число';
       }
     });
@@ -464,7 +477,7 @@ function CreateDocumentPage({ template, onGenerated }: { template: Template; onG
             {variables.map((variable) => (
               <div key={variable.id}>
                 <dt>{variable.label}</dt>
-                <dd>{String(values[variable.name] || 'Не заполнено')}</dd>
+                <dd>{formatPreviewValue(values[variable.name])}</dd>
               </div>
             ))}
           </dl>
@@ -476,6 +489,28 @@ function CreateDocumentPage({ template, onGenerated }: { template: Template; onG
   );
 }
 
+function getInitialFieldValue(variable: TemplateVariable): DocumentFieldValue {
+  if (variable.type === 'boolean') {
+    return variable.defaultValue === 'true';
+  }
+
+  if (variable.type === 'table') {
+    return [];
+  }
+
+  return variable.defaultValue;
+}
+
+function formatPreviewValue(value: DocumentFieldValue | undefined): string {
+  if (Array.isArray(value)) {
+    return value.length > 0 ? `${value.length} строк(и)` : 'Не заполнено';
+  }
+
+  if (value === true) return 'Да';
+  if (value === false) return 'Нет';
+  return value || 'Не заполнено';
+}
+
 function DynamicField({
   variable,
   value,
@@ -483,20 +518,22 @@ function DynamicField({
   onChange,
 }: {
   variable: TemplateVariable;
-  value: string | boolean | undefined;
+  value: DocumentFieldValue | undefined;
   error?: string;
-  onChange: (value: string | boolean) => void;
+  onChange: (value: DocumentFieldValue) => void;
 }) {
+  const selectOptions = Array.isArray(variable.options) ? variable.options : [];
+
   return (
-    <label className={error ? 'field has-error' : 'field'}>
-      {variable.label}
+    <div className={error ? 'field has-error' : 'field'}>
+      <span className="field-label">{variable.label}</span>
       {variable.type === 'textarea' && (
         <textarea value={String(value || '')} onChange={(event) => onChange(event.target.value)} />
       )}
       {variable.type === 'select' && (
         <select value={String(value || '')} onChange={(event) => onChange(event.target.value)}>
           <option value="">Выберите значение</option>
-          {(variable.options || []).map((option) => <option key={option}>{option}</option>)}
+          {selectOptions.map((option) => <option key={option}>{option}</option>)}
         </select>
       )}
       {variable.type === 'boolean' && (
@@ -505,16 +542,76 @@ function DynamicField({
           Да
         </span>
       )}
-      {!['textarea', 'select', 'boolean'].includes(variable.type) && (
+      {variable.type === 'table' && (
+        <TableField
+          variable={variable}
+          value={Array.isArray(value) ? value : []}
+          onChange={onChange}
+        />
+      )}
+      {!['textarea', 'select', 'boolean', 'table'].includes(variable.type) && (
         <input
-          type={variable.type === 'date' ? 'date' : variable.type === 'number' || variable.type === 'money' ? 'number' : 'text'}
+          type={variable.type === 'date' ? 'date' : variable.type === 'number' || variable.type === 'currency' ? 'number' : 'text'}
           value={String(value || '')}
           onChange={(event) => onChange(event.target.value)}
         />
       )}
       {variable.hint && <span className="hint">{variable.hint}</span>}
       {error && <span className="error">{error}</span>}
-    </label>
+    </div>
+  );
+}
+
+function TableField({
+  variable,
+  value,
+  onChange,
+}: {
+  variable: TemplateVariable;
+  value: TableRowValue[];
+  onChange: (value: TableRowValue[]) => void;
+}) {
+  const columns = !Array.isArray(variable.options) && variable.options?.columns?.length
+    ? variable.options.columns
+    : ['Наименование', 'Кол-во', 'Цена'];
+
+  const addRow = () => {
+    onChange([...value, Object.fromEntries(columns.map((column) => [column, '']))]);
+  };
+
+  const updateCell = (rowIndex: number, column: string, nextValue: string) => {
+    onChange(
+      value.map((row, index) => (index === rowIndex ? { ...row, [column]: nextValue } : row)),
+    );
+  };
+
+  const removeRow = (rowIndex: number) => {
+    onChange(value.filter((_, index) => index !== rowIndex));
+  };
+
+  return (
+    <div className="table-field">
+      {value.length > 0 && (
+        <div className="table-field-head" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(120px, 1fr)) 90px` }}>
+          {columns.map((column) => <span key={column}>{column}</span>)}
+          <span />
+        </div>
+      )}
+      {value.map((row, rowIndex) => (
+        <div className="table-field-row" key={rowIndex} style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(120px, 1fr)) 90px` }}>
+          {columns.map((column) => (
+            <input
+              key={column}
+              value={row[column] || ''}
+              onChange={(event) => updateCell(rowIndex, column, event.target.value)}
+              placeholder={column}
+            />
+          ))}
+          <button className="secondary" type="button" onClick={() => removeRow(rowIndex)}>Удалить</button>
+        </div>
+      ))}
+      <button className="secondary" type="button" onClick={addRow}>Добавить строку</button>
+    </div>
   );
 }
 

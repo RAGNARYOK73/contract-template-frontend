@@ -10,7 +10,7 @@ export const seedTemplates: Template[] = [
     status: 'published',
     version: 3,
     createdAt: '2026-06-20',
-    variableCount: 8,
+    variableCount: 9,
   },
   {
     id: 'template-2',
@@ -82,7 +82,7 @@ export const seedVariables: TemplateVariable[] = [
     templateId: 'template-1',
     name: 'total_amount',
     label: 'Сумма договора',
-    type: 'money',
+    type: 'currency',
     required: true,
     defaultValue: '',
     hint: 'Сумма в рублях',
@@ -119,6 +119,19 @@ export const seedVariables: TemplateVariable[] = [
     hint: 'Дополнительные условия для документа',
   },
   {
+    id: 'var-15',
+    templateId: 'template-1',
+    name: 'items',
+    label: 'Позиции',
+    type: 'table',
+    required: false,
+    defaultValue: '',
+    hint: 'Добавьте товары или услуги',
+    options: {
+      columns: ['Наименование', 'Кол-во', 'Цена'],
+    },
+  },
+  {
     id: 'var-9',
     templateId: 'template-2',
     name: 'act_number',
@@ -143,7 +156,7 @@ export const seedVariables: TemplateVariable[] = [
     templateId: 'template-2',
     name: 'amount',
     label: 'Стоимость работ',
-    type: 'money',
+    type: 'currency',
     required: true,
     defaultValue: '',
     hint: '',
@@ -195,6 +208,13 @@ export const seedDocuments: GeneratedDocument[] = [
       customer_name: 'АО "Север"',
       total_amount: '450000',
       include_warranty: true,
+      items: [
+        {
+          Наименование: 'Станок',
+          'Кол-во': '1',
+          Цена: '450000',
+        },
+      ],
     },
   },
 ];

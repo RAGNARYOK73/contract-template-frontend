@@ -1,4 +1,5 @@
 import {
+  DocumentFieldValue,
   GeneratedDocument,
   Template,
   TemplateVariable,
@@ -60,7 +61,7 @@ export async function uploadTemplate(input: UploadTemplateInput): Promise<Templa
     templateId: id,
     name,
     label: name,
-    type: name.includes('date') ? 'date' : name.includes('amount') ? 'money' : name.includes('include') ? 'boolean' : 'text',
+    type: name.includes('date') ? 'date' : name.includes('amount') ? 'currency' : name.includes('include') ? 'boolean' : 'text',
     required: index < 4,
     defaultValue: '',
     hint: '',
@@ -99,7 +100,7 @@ export async function getDocuments(): Promise<GeneratedDocument[]> {
 
 export async function generateDocument(
   template: Template,
-  values: Record<string, string | boolean>,
+  values: Record<string, DocumentFieldValue>,
   format: 'docx' | 'pdf',
 ): Promise<GeneratedDocument> {
   await wait(500);

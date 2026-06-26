@@ -317,6 +317,14 @@ label,
   font-weight: 700;
 }
 
+.field-label {
+  display: block;
+}
+
+.field:has(.table-field) {
+  grid-column: 1 / -1;
+}
+
 .file-input input {
   display: none;
 }
@@ -377,6 +385,34 @@ label,
 .inline-control input {
   width: 18px;
   min-height: 18px;
+}
+
+.table-field {
+  display: grid;
+  gap: 8px;
+  overflow-x: auto;
+  border: 1px solid #dde4ee;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 10px;
+}
+
+.table-field-head,
+.table-field-row {
+  display: grid;
+  gap: 8px;
+  min-width: 560px;
+  align-items: center;
+}
+
+.table-field-head {
+  color: #697586;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.table-field button {
+  width: fit-content;
 }
 
 .split-view {

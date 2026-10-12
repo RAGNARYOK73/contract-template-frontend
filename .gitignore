@@ -1,9 +1,25 @@
-node_modules/
-dist/
-.npm-cache/
-backend/
-
+# Environment and local credentials
 .env
-.env.local
+.env.*
+!.env.example
+auth.json
+
+# Dependencies and generated assets
+**/vendor/
+**/node_modules/
+**/dist/
+**/public/build/
+**/public/storage
+**/storage/app/public/*
+!**/storage/app/public/.gitignore
+**/storage/framework/views/*.php
+**/storage/logs/*.log
+**/.phpunit.result.cache
+
+# Local editor and operating system files
 .DS_Store
 Thumbs.db
+.idea/
+.vscode/
+*.log
+
